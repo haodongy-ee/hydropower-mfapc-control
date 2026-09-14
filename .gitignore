@@ -1,0 +1,17 @@
+# MATLAB/Simulink generated files
+slprj/
+*.slxc
+*.autosave
+*.asv
+*.m~
+*.slx.r20*
+
+# Local development and archived files
+01_original/
+02_working/
+archive/
+
+# Temporary system files
+*.tmp
+Thumbs.db
+.DS_Store
