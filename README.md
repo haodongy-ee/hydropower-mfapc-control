@@ -23,6 +23,41 @@ controller_params = [2.40, 0.32, 0.18, 0.030, 0.06, 0.08, 0.08];
 
 The final values were selected through sensitivity analysis, a 36-case joint search, a 12-case local search, and a focused three-case refinement of `alpha_r`.
 
+## Conventional MPC baseline
+
+A conventional fixed-model MPC baseline is included as a third controller. It
+uses a stable second-order affine ARX prediction model identified from four
+dedicated trajectories that are separate from the six benchmark conditions.
+The first three trajectories are used for fitting and the fourth is held out.
+
+Free-run validation showed that the original `0.01 s` model's excellent
+one-step score did not translate directly to closed-loop prediction. The final
+controller therefore uses a separately fitted `0.05 s` model, executes every
+five plant samples, predicts 40 samples (`2.0 s`), and optimizes four future
+input moves. It uses an input-move weight of `20`, `|delta u| <= 0.020` per MPC
+update, and `-1.15 <= u <= 1.15`. A projected-gradient QP solver avoids a
+run-time dependency on Model Predictive Control Toolbox.
+
+Run the MPC workflow in MATLAB R2023a:
+
+```matlab
+run('scripts/identify_mpc_model.m')
+run('scripts/analyze_mpc_model_orders.m')
+run('scripts/build_mpc_model.m')
+run('scripts/run_mpc_comparison.m')
+```
+
+The generated model is named `models/HT_ctrl_MPC_baseline.slx` so it cannot
+overwrite an earlier model named `HT_ctrl_MPC.slx`. See
+[`docs/MPC_DESIGN.md`](docs/MPC_DESIGN.md) for the formulation and outputs.
+
+Across all six conditions, MPC achieved the lowest IAE in every case. Its mean
+IAE was `0.572218`, an `11.11%` reduction relative to tuned MFAPC and `32.52%`
+relative to MFAC. Mean ITAE was `3.573921`. The tradeoff is higher mean 35 s
+directional overshoot (`3.5333%`) and steady-state error (`0.003122`) than
+MFAPC, so this controller should be presented as a tracking-error baseline, not
+as uniformly superior on every metric.
+
 ## Evaluation metrics
 
 - **IAE:** integral of absolute tracking error from 20 to 50 s.
@@ -56,6 +91,18 @@ The reference changes occur at 0, 20, and 35 s.
 | Settling time after 35 s | 2.3557 s | 2.3309 s | −1.06% |
 | Steady-state error | 0.000067 | 0.000560 | 88.10% |
 | Steady-state fluctuation | 0.004049 | 0.004480 | 9.62% |
+
+### Three-controller results
+
+| Metric | MPC | MFAPC | MFAC |
+|---|---:|---:|---:|
+| IAE | 0.572218 | 0.643752 | 0.848029 |
+| ITAE | 3.573921 | 3.608410 | 4.845817 |
+| 20 s directional overshoot | 3.9201% | 3.2371% | 17.3170% |
+| 35 s directional overshoot | 3.5333% | 0.2686% | 3.9507% |
+| Settling time after 35 s | 2.4569 s | 2.3557 s | 2.3309 s |
+| Steady-state error | 0.003122 | 0.000067 | 0.000560 |
+| Steady-state fluctuation | 0.005228 | 0.004049 | 0.004480 |
 
 ## Reproduction workflow
 
@@ -97,4 +144,3 @@ The large 0.50-to-0.85 pu change still produced a 10.34% MFAPC overshoot, which 
 - Reconstructed and extended a hydropower generation control model in MATLAB/Simulink, implementing a reproducible workflow for MFAPC parameter tuning and performance evaluation.
 - Automated sensitivity, joint-grid, and local parameter searches using IAE, ITAE, overshoot, settling time, and steady-state metrics to select a final seven-parameter controller configuration.
 - Evaluated MFAPC against MFAC across six upward and downward reference profiles; reduced mean IAE by 24.1% and directional overshoot by 81.3%–93.2%, while documenting the small-step settling-time tradeoff.
-
