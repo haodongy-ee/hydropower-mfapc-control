@@ -23,9 +23,9 @@ controller_params = [2.40, 0.32, 0.18, 0.030, 0.06, 0.08, 0.08];
 
 The final values were selected through sensitivity analysis, a 36-case joint search, a 12-case local search, and a focused three-case refinement of `alpha_r`.
 
-## Conventional MPC baseline
+## Offset-free MPC
 
-A conventional fixed-model MPC baseline is included as a third controller. It
+A conventional fixed-model MPC is included as a third controller. It
 uses a stable second-order affine ARX prediction model identified from four
 dedicated trajectories that are separate from the six benchmark conditions.
 The first three trajectories are used for fitting and the fourth is held out.
@@ -34,9 +34,12 @@ Free-run validation showed that the original `0.01 s` model's excellent
 one-step score did not translate directly to closed-loop prediction. The final
 controller therefore uses a separately fitted `0.05 s` model, executes every
 five plant samples, predicts 40 samples (`2.0 s`), and optimizes four future
-input moves. It uses an input-move weight of `20`, `|delta u| <= 0.020` per MPC
-update, and `-1.15 <= u <= 1.15`. A projected-gradient QP solver avoids a
-run-time dependency on Model Predictive Control Toolbox.
+input moves. The completed first-stage controller adds bounded integral target
+trimming and reference filtering to remove model-mismatch offset without a
+low-frequency limit cycle. Its selected settings are move weight `40`,
+`|delta u| <= 0.015`, integral gain `0.03`, trim limit `0.03`, integration gate
+`0.02`, and reference-filter coefficient `0.10`. A projected-gradient QP solver
+avoids a run-time dependency on Model Predictive Control Toolbox.
 
 Run the MPC workflow in MATLAB R2023a:
 
@@ -44,6 +47,7 @@ Run the MPC workflow in MATLAB R2023a:
 run('scripts/identify_mpc_model.m')
 run('scripts/analyze_mpc_model_orders.m')
 run('scripts/build_mpc_model.m')
+run('scripts/run_mpc_offsetfree_tuning.m')
 run('scripts/run_mpc_comparison.m')
 ```
 
@@ -51,12 +55,13 @@ The generated model is named `models/HT_ctrl_MPC_baseline.slx` so it cannot
 overwrite an earlier model named `HT_ctrl_MPC.slx`. See
 [`docs/MPC_DESIGN.md`](docs/MPC_DESIGN.md) for the formulation and outputs.
 
-Across all six conditions, MPC achieved the lowest IAE in every case. Its mean
-IAE was `0.572218`, an `11.11%` reduction relative to tuned MFAPC and `32.52%`
-relative to MFAC. Mean ITAE was `3.573921`. The tradeoff is higher mean 35 s
-directional overshoot (`3.5333%`) and steady-state error (`0.003122`) than
-MFAPC, so this controller should be presented as a tracking-error baseline, not
-as uniformly superior on every metric.
+Tuning uses three dedicated profiles that are not part of the six final test
+conditions. Across those six tests, the offset-free MPC reduced its earlier
+baseline mean IAE by `4.65%`, ITAE by `22.09%`, 35 s overshoot by `70.24%`,
+settling time by `31.70%`, and steady-state error by `95.63%`. Its final mean
+IAE is `0.545582`, mean 35 s overshoot is `1.0516%`, and mean steady-state error
+is `0.000136`. MFAPC still has the lowest overshoot and steady-state error, while
+the offset-free MPC provides the best overall integrated tracking error.
 
 ## Evaluation metrics
 
@@ -94,15 +99,15 @@ The reference changes occur at 0, 20, and 35 s.
 
 ### Three-controller results
 
-| Metric | MPC | MFAPC | MFAC |
+| Metric | Offset-free MPC | MFAPC | MFAC |
 |---|---:|---:|---:|
-| IAE | 0.572218 | 0.643752 | 0.848029 |
-| ITAE | 3.573921 | 3.608410 | 4.845817 |
-| 20 s directional overshoot | 3.9201% | 3.2371% | 17.3170% |
-| 35 s directional overshoot | 3.5333% | 0.2686% | 3.9507% |
-| Settling time after 35 s | 2.4569 s | 2.3557 s | 2.3309 s |
-| Steady-state error | 0.003122 | 0.000067 | 0.000560 |
-| Steady-state fluctuation | 0.005228 | 0.004049 | 0.004480 |
+| IAE | 0.545582 | 0.643752 | 0.848029 |
+| ITAE | 2.784530 | 3.608410 | 4.845817 |
+| 20 s directional overshoot | 3.0753% | 3.2371% | 17.3170% |
+| 35 s directional overshoot | 1.0516% | 0.2686% | 3.9507% |
+| Settling time after 35 s | 1.6780 s | 2.3557 s | 2.3309 s |
+| Steady-state error | 0.000136 | 0.000067 | 0.000560 |
+| Steady-state fluctuation | 0.004877 | 0.004049 | 0.004480 |
 
 ## Reproduction workflow
 
@@ -127,6 +132,8 @@ results/mfapc_local_search.csv
 results/mfapc_alpha_refine.csv
 results/mfapc_operating_condition_results.csv
 results/mfapc_vs_mfac_comparison_v4.csv
+results/mpc_offsetfree_final_refinement_summary.csv
+results/three_controller_offsetfree_comparison.csv
 ```
 
 The final comparison uses two independent models. The MFAPC model is simulated with the tuned parameter vector, while the MFAC model is simulated separately under the same reference profiles and 50 s stop time.
