@@ -31,6 +31,10 @@ itae = trapz( ...
     (t(metric_index) - 20) .* abs(reference(metric_index) - y(metric_index)));
 steady_error = abs(0.90 - mean(y(steady_index)));
 steady_fluctuation = max(y(steady_index)) - min(y(steady_index));
+local20 = y(t >= 20 & t < 35);
+local35 = y(t >= 35);
+overshoot20 = max(max(local20) - 0.75, 0) / 0.75 * 100;
+overshoot35 = max(max(local35) - 0.90, 0) / 0.90 * 100;
 
 fprintf('final_y=%.8f\n', y(end));
 fprintf('final_u=%.8f\n', u(end));
@@ -38,6 +42,8 @@ fprintf('IAE=%.8f\n', iae);
 fprintf('ITAE=%.8f\n', itae);
 fprintf('steady_error=%.8f\n', steady_error);
 fprintf('steady_fluctuation=%.8f\n', steady_fluctuation);
+fprintf('overshoot20=%.8f%%\n', overshoot20);
+fprintf('overshoot35=%.8f%%\n', overshoot35);
 fprintf('u_range=[%.8f,%.8f]\n', min(u), max(u));
 
 close_system(model, 0);

@@ -8,7 +8,8 @@ function u = mpc_controller_block(y, r, u_last, p)
 %   y(k+1) = a1*y(k) + a2*y(k-1) + b1*u(k) + b2*u(k-1) + bias
 %
 % p = [a1, a2, b1, b2, bias, output_weight, move_weight,
-%      du_limit, u_min, u_max]
+%      du_limit, u_min, u_max, integral_gain, integral_limit,
+%      integration_gate, reference_filter_alpha]
 
 persistent y_previous
 persistent held_input
@@ -18,6 +19,10 @@ persistent prediction_moves
 persistent hessian
 persistent gradient_step
 persistent sample_counter
+persistent filtered_reference
+persistent integral_trim
+persistent previous_reference
+persistent gate_counter
 persistent initialized
 
 prediction_horizon = 40;
@@ -79,6 +84,10 @@ if isempty(initialized)
     held_input = u_last;
     move_plan = zeros(4, 1);
     sample_counter = 0;
+    filtered_reference = r;
+    integral_trim = 0.0;
+    previous_reference = r;
+    gate_counter = 0;
     initialized = true;
 end
 
@@ -93,9 +102,43 @@ output_weight = p(6);
 du_limit = p(8);
 u_min = p(9);
 u_max = p(10);
+integral_gain = p(11);
+integral_limit = p(12);
+integration_gate = p(13);
+reference_filter_alpha = p(14);
+
+% Reset the trim at each commanded operating-point change. The filtered
+% reference reduces the set-point kick without filtering plant feedback.
+if abs(r - previous_reference) > 1e-8
+    integral_trim = 0.0;
+    gate_counter = 0;
+end
+
+previous_reference = r;
+filtered_reference = filtered_reference + ...
+    reference_filter_alpha * (r - filtered_reference);
+
+% Conditional, delayed integration gives offset-free tracking without
+% accumulating error during the large transient. Ten qualified updates are
+% required before integration starts (0.5 s at the 0.05 s MPC rate).
+tracking_error = r - y;
+
+if abs(tracking_error) <= integration_gate && ...
+        held_input > u_min + du_limit && held_input < u_max - du_limit
+    gate_counter = min(gate_counter + 1, 11);
+
+    if gate_counter > 10
+        integral_trim = integral_trim + integral_gain * tracking_error;
+        integral_trim = max( ...
+            -integral_limit, min(integral_trim, integral_limit));
+    end
+else
+    gate_counter = 0;
+end
 
 state = [y; y_previous; held_input; 1.0];
-reference = r * ones(prediction_horizon, 1);
+corrected_reference = filtered_reference + integral_trim;
+reference = corrected_reference * ones(prediction_horizon, 1);
 free_error = prediction_free * state - reference;
 gradient_offset = 2.0 * output_weight * ...
     (prediction_moves' * free_error);

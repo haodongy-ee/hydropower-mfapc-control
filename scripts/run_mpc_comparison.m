@@ -67,7 +67,7 @@ cleanup_object = onCleanup(@() clean_up_model( ...
 
 %% Prepare MPC result rows
 Scenario = scenario_names;
-Controller = repmat("MPC_baseline", number_of_cases, 1);
+Controller = repmat("MPC_offsetfree", number_of_cases, 1);
 Step0 = step_values(:, 1);
 Step20 = step_values(:, 2);
 Step35 = step_values(:, 3);
@@ -170,8 +170,8 @@ for case_number = 1:number_of_cases
         mpc_rows(mpc_rows.Scenario == scenario, :)]; %#ok<AGROW>
 end
 
-csv_file = fullfile(results_dir, 'three_controller_comparison.csv');
-mat_file = fullfile(results_dir, 'three_controller_comparison.mat');
+csv_file = fullfile(results_dir, 'three_controller_offsetfree_comparison.csv');
+mat_file = fullfile(results_dir, 'three_controller_offsetfree_comparison.mat');
 writetable(results_table, csv_file);
 save(mat_file, 'results_table', 'step_values');
 

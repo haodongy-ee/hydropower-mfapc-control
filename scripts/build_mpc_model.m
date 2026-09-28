@@ -34,20 +34,21 @@ mpc_params = [ ...
     identified.b2, ...
     identified.bias, ...
     1.0, ...   % output tracking weight
-   20.00, ...  % input-move weight (robustness to model mismatch)
-    0.020, ... % |delta u| limit per 0.05 s MPC update
+   40.00, ...  % selected input-move weight
+    0.015, ... % selected |delta u| limit per 0.05 s update
    -1.15, ...  % lower actuator limit
-    1.15];     % upper actuator limit
+    1.15, ...  % upper actuator limit
+    0.030, ... % selected conditional integral gain
+    0.030, ... % integral trim limit
+    0.020, ... % error gate for integral action
+    0.10];     % selected reference-filter coefficient per MPC update
 
-%% Save a new model before making any changes
-load_system(source_file);
-[~, source_model] = fileparts(source_file);
-save_system(source_model, target_file);
+%% Copy the source model at the file-system level before making changes.
+% R2023a can block while performing save-as over an existing SLX file. A
+% normal file copy followed by an in-place Simulink save avoids that path.
+copyfile(source_file, target_file, 'f');
 [~, model] = fileparts(target_file);
-
-if ~bdIsLoaded(model)
-    load_system(target_file);
-end
+load_system(target_file);
 
 controller_block = [model '/MFAPC_Controller'];
 
@@ -102,10 +103,10 @@ if getSimulinkBlockHandle([model '/mfapc']) ~= -1
 end
 
 set_param(model, 'Description', [ ...
-    'Fixed-model constrained MPC baseline generated from ', ...
+    'Offset-free multirate constrained MPC generated from ', ...
     'HT_ctrl_MFAPC_final.slx by scripts/build_mpc_model.m.']);
 
-save_system(model, target_file);
+save_system(model);
 close_system(model, 0);
 
 save( ...
