@@ -1,4 +1,4 @@
-# Fixed-model MPC baseline
+# Offset-free fixed-model MPC
 
 This branch adds a conventional, model-based MPC baseline without changing the
 existing MFAPC or MFAC models.
@@ -43,12 +43,19 @@ bias state. Simulink runs at `0.01 s`, while the optimizer executes every fifth
 sample and holds its output between updates. At each `0.05 s` update it predicts
 40 samples (`2.0 s`) and optimizes four future input increments. The objective
 penalizes predicted tracking error and input movement; the final move weight is
-`20`.
+`40`.
 
 Hard constraints are projected into the optimization iterations:
 
 - actuator range: `-1.15 <= u <= 1.15`;
-- input movement: `|delta u| <= 0.020` per `0.05 s` MPC update.
+- input movement: `|delta u| <= 0.015` per `0.05 s` MPC update.
+
+To reject the residual offset caused by fixed-model mismatch, the reference
+used by the predictor includes a bounded integral trim. Integration starts only
+after the tracking error remains inside a `0.02 pu` gate for ten optimizer
+updates, and it is suspended near actuator limits. The integral gain and trim
+limit are both `0.03`. A first-order reference filter with coefficient `0.10`
+reduces step overshoot. The trim is reset when the commanded target changes.
 
 The small quadratic program is solved by 20 warm-started projected-gradient
 iterations inside the MATLAB Function block. This avoids a run-time dependency
@@ -63,6 +70,7 @@ Run the scripts in MATLAB R2023a from the repository root:
 run('scripts/identify_mpc_model.m')
 run('scripts/analyze_mpc_model_orders.m')
 run('scripts/build_mpc_model.m')
+run('scripts/run_mpc_offsetfree_tuning.m')
 run('scripts/run_mpc_comparison.m')
 ```
 
@@ -72,22 +80,27 @@ Outputs:
 - `results/mpc_identification_profiles.mat`;
 - `results/mpc_multirate_model.mat`;
 - `models/HT_ctrl_MPC_baseline.slx`;
-- `results/three_controller_comparison.csv` and `.mat`.
+- `results/mpc_offsetfree_final_refinement.csv` and `_summary.csv`;
+- `results/mpc_offsetfree_selected.mat`;
+- `results/three_controller_offsetfree_comparison.csv` and `.mat`.
 
 `HT_ctrl_MPC_baseline.slx` deliberately uses a new name so it cannot overwrite
 an earlier user model named `HT_ctrl_MPC.slx`.
 
-## Six-condition result
+## Tuning and six-condition result
 
-All six MPC simulations completed successfully in MATLAB R2023a. MPC achieved
-the lowest IAE in all six scenarios. Its mean IAE was `0.572218`, compared with
-`0.643752` for MFAPC and `0.848029` for MFAC. Mean ITAE was `3.573921`, compared
-with `3.608410` and `4.845817`. The robust move penalty reduced nominal
-steady-state fluctuation from `0.08539 pu` in the aggressive prototype to
-`0.00687 pu` in the retained controller.
+Controller selection used three dedicated tuning profiles, separate from the
+six benchmark conditions. A coarse search was followed by two refinements; the
+retained setting is `[move_weight, du_limit, integral_gain,
+reference_filter_alpha] = [40, 0.015, 0.03, 0.10]`.
 
-The main limitation is offset/overshoot: mean steady-state error is `0.003122`
-and mean 35 s directional overshoot is `3.5333%`, both worse than MFAPC. An
-offset-free disturbance model or integral target calculation is therefore a
-future refinement, but was not enabled in this baseline because the initial
-high-gain disturbance estimator created a low-frequency limit cycle.
+All six final simulations completed successfully in MATLAB R2023a. The final
+means are: IAE `0.545582`, ITAE `2.784530`, 20 s directional overshoot
+`3.0753%`, 35 s directional overshoot `1.0516%`, settling time `1.6780 s`,
+steady-state error `0.000136`, and steady-state fluctuation `0.004877`.
+
+Relative to the original fixed-model MPC baseline, this reduces IAE by `4.65%`,
+ITAE by `22.09%`, 20 s overshoot by `21.55%`, 35 s overshoot by `70.24%`,
+settling time by `31.70%`, steady-state error by `95.63%`, and fluctuation by
+`6.71%`. Mean 35 s overshoot is just above the aspirational `1%` target, while
+the steady-error and fluctuation targets are satisfied.
