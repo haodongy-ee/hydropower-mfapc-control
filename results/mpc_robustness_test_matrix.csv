@@ -1,0 +1,24 @@
+CaseID,Category,Description,Profile,ActuatorGainScale,ActuatorTimeConstant,NoiseStd,NoiseSeed,LoadPowerMW,LoadInitialState,LoadSwitchTime,RateLimit,MeasurementDelay
+baseline,baseline,Frozen phase-1 nominal case,nominal,1,0.07,0,101,3,open,30,0.1,0
+gain_m20,plant_gain,Actuator gain -20%,nominal,0.8,0.07,0,102,3,open,30,0.1,0
+gain_m10,plant_gain,Actuator gain -10%,nominal,0.9,0.07,0,103,3,open,30,0.1,0
+gain_p10,plant_gain,Actuator gain +10%,nominal,1.1,0.07,0,104,3,open,30,0.1,0
+gain_p20,plant_gain,Actuator gain +20%,nominal,1.2,0.07,0,105,3,open,30,0.1,0
+tau_m20,time_constant,Actuator time constant -20%,nominal,1,0.056,0,106,3,open,30,0.1,0
+tau_m10,time_constant,Actuator time constant -10%,nominal,1,0.063,0,107,3,open,30,0.1,0
+tau_p10,time_constant,Actuator time constant +10%,nominal,1,0.077,0,108,3,open,30,0.1,0
+tau_p20,time_constant,Actuator time constant +20%,nominal,1,0.084,0,109,3,open,30,0.1,0
+noise_001,measurement_noise,Measurement noise 0.001 pu,nominal,1,0.07,0.001,201,3,open,30,0.1,0
+noise_003,measurement_noise,Measurement noise 0.003 pu,nominal,1,0.07,0.003,202,3,open,30,0.1,0
+noise_005,measurement_noise,Measurement noise 0.005 pu,nominal,1,0.07,0.005,203,3,open,30,0.1,0
+load_add_15,load_disturbance,Add 1.5 MW load at 30 s,nominal,1,0.07,0,301,1.5,open,30,0.1,0
+load_add_60,load_disturbance,Add 6 MW load at 30 s,nominal,1,0.07,0,302,6,open,30,0.1,0
+load_reject_15,load_disturbance,Reject 1.5 MW load at 30 s,nominal,1,0.07,0,303,1.5,closed,30,0.1,0
+load_reject_30,load_disturbance,Reject 3 MW load at 30 s,nominal,1,0.07,0,304,3,closed,30,0.1,0
+rate_075,actuator_limit,Actuator rate limit 0.075 pu,nominal,1,0.07,0,401,3,open,30,0.075,0
+rate_050,actuator_limit,Actuator rate limit 0.050 pu,nominal,1,0.07,0,402,3,open,30,0.05,0
+delay_010,measurement_delay,Measurement delay 0.01 s,nominal,1,0.07,0,501,3,open,30,0.1,0.01
+delay_020,measurement_delay,Measurement delay 0.02 s,nominal,1,0.07,0,502,3,open,30,0.1,0.02
+delay_050,measurement_delay,Measurement delay 0.05 s,nominal,1,0.07,0,503,3,open,30,0.1,0.05
+low_output,operating_point,Low-output reference profile,low,1,0.07,0,601,3,open,30,0.1,0
+high_output,operating_point,High-output reference profile,high,1,0.07,0,602,3,open,30,0.1,0

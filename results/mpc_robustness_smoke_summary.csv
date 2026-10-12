@@ -1,0 +1,3 @@
+Category,Cases,SuccessfulCases,PassedCases,SuccessRate,PassRate,P95IAE,P95Overshoot35,P95SteadyError
+baseline,1,1,1,1,1,0.592841498086767,1.69751630082447,2.12896787272765e-05
+measurement_noise,1,1,0,1,0,0.60811040578753,1.73124310787743,0.000256566728811025

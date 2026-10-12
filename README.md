@@ -142,7 +142,38 @@ The final comparison uses two independent models. The MFAPC model is simulated w
 
 MFAPC produced lower IAE and ITAE in four of six scenarios, lower directional overshoot in all six scenarios, lower steady-state error in five scenarios, and lower steady-state fluctuation in five scenarios. Its strongest advantage was transient overshoot suppression under nominal, high-output, and rise-then-drop profiles.
 
-The large 0.50-to-0.85 pu change still produced a 10.34% MFAPC overshoot, which identifies a practical operating boundary. MFAC was faster for the smallest reference changes. The current study is deterministic and simulation-only; it does not yet include plant-parameter uncertainty, sensor noise, Monte Carlo trials, or hardware-in-the-loop validation. These limitations should be stated when presenting the project.
+The large 0.50-to-0.85 pu change still produced a 10.34% MFAPC overshoot, which identifies a practical operating boundary. MFAC was faster for the smallest reference changes. The current study is simulation-only. Deterministic phase-2 screening now covers plant-parameter uncertainty, sensor noise, load events, actuator limits, measurement delay, and operating-point changes; randomized Monte Carlo trials and hardware-in-the-loop validation remain future work. These limitations should be stated when presenting the project.
+
+## Phase 2: robustness platform
+
+The completed phase-1 MPC model, parameters, six-scenario results, and SHA-256
+checksums are frozen in `baselines/phase1_offsetfree_mpc`. Phase-2 work uses a
+separate generated model, so the published baseline cannot be overwritten.
+
+The robustness screening platform covers plant gain and time-constant changes,
+measurement noise, positive and negative load events, actuator-rate limits,
+measurement delay, and low/high operating points. Run it in MATLAB R2023a:
+
+```matlab
+addpath('scripts')
+build_mpc_robustness_model
+run_mpc_robustness_tests("smoke")
+run_mpc_robustness_tests("screening")
+```
+
+See [`docs/ROBUSTNESS_TEST_PLAN.md`](docs/ROBUSTNESS_TEST_PLAN.md) for the
+23-case matrix, recorded metrics, and acceptance criteria.
+
+The complete R2023a screening finished successfully for all 23 cases. Overall,
+21 cases passed the acceptance criteria (`91.3%`). Plant-gain, time-constant,
+load-disturbance, actuator-limit, measurement-delay, and operating-point cases
+all achieved a 100% pass rate with zero input/move-constraint violations. The
+only failures were the `0.003 pu` and `0.005 pu` measurement-noise cases, whose
+steady fluctuations were `0.008711 pu` and `0.011632 pu`, above the `0.008 pu`
+limit. Tracking remained bounded: the `0.005 pu` case had IAE `0.625858`, only
+`5.57%` above nominal, but control total variation increased by `178.13%`.
+Measurement filtering and noise-aware tuning are therefore the next controller
+improvements.
 
 ## Resume-ready description
 
