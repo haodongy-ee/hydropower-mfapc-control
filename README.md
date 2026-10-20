@@ -2,7 +2,17 @@
 
 This project evaluates a model-free adaptive predictive controller (MFAPC) for active-power tracking in a Simulink hydropower generation model. It extends an earlier undergraduate simulation model with reproducible parameter sweeps, metric-based tuning, operating-condition tests, and a controlled comparison against a model-free adaptive controller (MFAC).
 
-## Main result
+## Results at a glance
+
+| Result | Evidence |
+|---|---|
+| MFAPC vs MFAC | 24.09% lower mean IAE and 93.20% lower mean overshoot after the 35 s step across six profiles |
+| Offset-free MPC | Lowest mean IAE (0.545582) and 35 s settling time (1.678 s) among the three controllers |
+| Upgraded MPC, phase 2.3 | 23/23 deterministic robustness cases passed, up from 21/23; both previously failing noise cases now pass |
+
+These are **simulation results**, not hardware or randomized robustness guarantees. The six-profile controller comparison and 23-case MPC screen are separate experiments; their averages should not be mixed.
+
+## MFAPC vs MFAC
 
 Across six deterministic operating conditions, the tuned MFAPC reduced the average integral absolute error by **24.09%**, the average time-weighted absolute error by **25.54%**, and directional overshoot after the 20 s and 35 s reference changes by **81.31%** and **93.20%**, respectively, relative to MFAC.
 
@@ -99,6 +109,10 @@ The reference changes occur at 0, 20, and 35 s.
 
 ### Three-controller results
 
+![Mean IAE, overshoot, and settling time for MFAC, MFAPC, and offset-free MPC](figures/controller_tradeoffs.svg)
+
+The figure uses the six-scenario means in [`results/mpc_offsetfree_average_summary.csv`](results/mpc_offsetfree_average_summary.csv). Lower is better for all three shown metrics: MPC leads on tracking error and settling time, while MFAPC leads on final-step overshoot. The MPC values here are for the **frozen phase-1 offset-free controller**, not the later phase-2.3 robustness variant.
+
 | Metric | Offset-free MPC | MFAPC | MFAC |
 |---|---:|---:|---:|
 | IAE | 0.545582 | 0.643752 | 0.848029 |
@@ -172,10 +186,13 @@ only failures were the `0.003 pu` and `0.005 pu` measurement-noise cases, whose
 steady fluctuations were `0.008711 pu` and `0.011632 pu`, above the `0.008 pu`
 limit. Tracking remained bounded: the `0.005 pu` case had IAE `0.625858`, only
 `5.57%` above nominal, but control total variation increased by `178.13%`.
-Measurement filtering and noise-aware tuning are therefore the next controller
-improvements.
+These two failures motivated the phase-2.3 measurement-filtering upgrade below.
 
 ## Phase 2.3: upgraded MPC
+
+![Steady output fluctuation and control total variation at three measurement-noise levels, before and after the MPC upgrade](figures/noise_robustness.svg)
+
+At 0.003 and 0.005 pu noise, upgraded MPC reduced steady output fluctuation by **50.46%** and **52.05%**, and control total variation by **52.07%** and **64.52%**, respectively. The dashed line marks the original 0.008 pu steady-fluctuation acceptance limit. Bars come from matched case IDs in [`results/mpc_robustness_screening_results.csv`](results/mpc_robustness_screening_results.csv) and [`results/mpc_23_screening_results.csv`](results/mpc_23_screening_results.csv).
 
 The upgraded controller adds a bounded output-disturbance estimate, adaptive
 measurement filtering, quadratic soft output constraints, and integral
@@ -192,11 +209,18 @@ run_mpc_robustness_tests("stress", "mpc23")
 The 23-case deterministic screen completed with **23/23 successful and passing
 cases**, versus 21/23 for the preceding controller. At 0.003 and 0.005 pu
 measurement noise, steady fluctuation fell by 50.46% and 52.05%, respectively.
-The nominal IAE increased 2.31%, and the 0.005 pu steady-error result is close
-to the acceptance threshold. A separate 1.2 pu request followed by return to
-0.6 pu verified recovery with zero hard input or move violations. See
+The nominal IAE increased 2.31% (0.592841 to 0.606517), and the 0.005 pu
+steady-error result (0.000952 pu) is close to the 0.001 pu acceptance threshold.
+A separate 1.2 pu request followed by return to 0.6 pu verified recovery with
+zero hard input or move violations. The 1.2 pu request exceeds the soft 1.0 pu
+output bound, so its IAE is not comparable with ordinary screening runs. See
 [`docs/MPC_23_UPGRADE.md`](docs/MPC_23_UPGRADE.md) for the design, tradeoffs,
 reproduction steps, and full result references.
+
+To regenerate both README charts from the committed CSVs, run `python
+scripts/plot_readme_results.py` from the repository root. The plotting script
+uses only the Python standard library; MATLAB is needed to rerun the simulations,
+not to redraw these figures.
 
 ## Resume-ready description
 
