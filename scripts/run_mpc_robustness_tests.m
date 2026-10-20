@@ -1,26 +1,49 @@
-function [results_table, summary_table] = run_mpc_robustness_tests(mode)
+function [results_table, summary_table] = run_mpc_robustness_tests(mode, variant)
 %RUN_MPC_ROBUSTNESS_TESTS Execute deterministic phase-2 screening cases.
 %   run_mpc_robustness_tests("smoke") runs two fast validation cases.
 %   run_mpc_robustness_tests("screening") runs the full one-factor matrix.
+%   run_mpc_robustness_tests("smoke", "mpc23") uses the upgraded controller.
+%   run_mpc_robustness_tests("stress", "mpc23") tests recovery from a
+%   1.2 pu request above the 1.0 pu soft output limit.
 
 if nargin < 1
     mode = "screening";
 end
+if nargin < 2
+    variant = "phase2";
+end
 
 mode = lower(string(mode));
+variant = lower(string(variant));
 
-if ~ismember(mode, ["smoke", "screening"])
-    error('Mode must be "smoke" or "screening".');
+if ~ismember(mode, ["smoke", "noise", "focused", ...
+        "screening", "stress"])
+    error('Unknown robustness test mode.');
+end
+if ~ismember(variant, ["phase2", "mpc23"])
+    error('Variant must be "phase2" or "mpc23".');
+end
+if mode == "stress" && variant ~= "mpc23"
+    error('Stress mode is intended for the upgraded MPC.');
 end
 
 script_path = mfilename('fullpath');
 scripts_dir = fileparts(script_path);
 project_root = fileparts(scripts_dir);
 results_dir = fullfile(project_root, 'results');
-model_file = fullfile(project_root, 'models', 'HT_ctrl_MPC_robustness.slx');
-
-if ~isfile(model_file)
-    build_mpc_robustness_model();
+if variant == "mpc23"
+    model_file = fullfile(project_root, 'models', 'HT_ctrl_MPC_23.slx');
+    if ~isfile(model_file)
+        build_mpc_23_model();
+    end
+    output_prefix = 'mpc_23';
+else
+    model_file = fullfile(project_root, 'models', ...
+        'HT_ctrl_MPC_robustness.slx');
+    if ~isfile(model_file)
+        build_mpc_robustness_model();
+    end
+    output_prefix = 'mpc_robustness';
 end
 
 all_cases = robustness_case_matrix();
@@ -29,6 +52,19 @@ writetable(all_cases, fullfile(results_dir, 'mpc_robustness_test_matrix.csv'));
 if mode == "smoke"
     selected_ids = ["baseline", "noise_003"];
     cases = all_cases(ismember(all_cases.CaseID, selected_ids), :);
+elseif mode == "noise"
+    selected_ids = ["baseline", "noise_003", "noise_005"];
+    cases = all_cases(ismember(all_cases.CaseID, selected_ids), :);
+elseif mode == "focused"
+    selected_ids = ["baseline", "noise_003", "noise_005", ...
+        "rate_050", "gain_p20", "high_output"];
+    cases = all_cases(ismember(all_cases.CaseID, selected_ids), :);
+elseif mode == "stress"
+    cases = all_cases(1, :);
+    cases.CaseID = "stress_recovery";
+    cases.Category = "soft_limit_recovery";
+    cases.Description = "1.2 pu request then return to 0.6 pu";
+    cases.Profile = "stress";
 else
     cases = all_cases;
 end
@@ -85,8 +121,8 @@ for case_number = 1:number_of_cases
     assignin('base', 'robust_measurement_delay_s', ...
         current.MeasurementDelay);
 
-    fprintf('Robustness case %d/%d: %s\n', ...
-        case_number, number_of_cases, current.CaseID);
+    fprintf('%s case %d/%d: %s\n', ...
+        variant, case_number, number_of_cases, current.CaseID);
     timer = tic;
 
     try
@@ -132,11 +168,11 @@ results_table = [cases, table( ...
 summary_table = summarize_results(results_table);
 
 csv_file = fullfile(results_dir, ...
-    sprintf('mpc_robustness_%s_results.csv', mode));
+    sprintf('%s_%s_results.csv', output_prefix, mode));
 summary_file = fullfile(results_dir, ...
-    sprintf('mpc_robustness_%s_summary.csv', mode));
+    sprintf('%s_%s_summary.csv', output_prefix, mode));
 mat_file = fullfile(results_dir, ...
-    sprintf('mpc_robustness_%s_results.mat', mode));
+    sprintf('%s_%s_results.mat', output_prefix, mode));
 writetable(results_table, csv_file);
 writetable(summary_table, summary_file);
 save(mat_file, 'results_table', 'summary_table', 'all_cases');
@@ -191,6 +227,8 @@ switch string(profile)
         values = [0.40, 0.15, 0.10];
     case "high"
         values = [0.60, 0.25, 0.10];
+    case "stress"
+        values = [0.50, 0.70, -0.60];
     otherwise
         error('Unknown operating profile: %s', profile);
 end

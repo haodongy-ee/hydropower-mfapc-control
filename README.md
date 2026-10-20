@@ -175,6 +175,29 @@ limit. Tracking remained bounded: the `0.005 pu` case had IAE `0.625858`, only
 Measurement filtering and noise-aware tuning are therefore the next controller
 improvements.
 
+## Phase 2.3: upgraded MPC
+
+The upgraded controller adds a bounded output-disturbance estimate, adaptive
+measurement filtering, quadratic soft output constraints, and integral
+anti-windup. It is built as `models/HT_ctrl_MPC_23.slx` from the phase-2 test
+harness; the frozen phase-1 model stays unchanged. Run in MATLAB R2023a:
+
+```matlab
+addpath('scripts')
+build_mpc_23_model
+run_mpc_robustness_tests("screening", "mpc23")
+run_mpc_robustness_tests("stress", "mpc23")
+```
+
+The 23-case deterministic screen completed with **23/23 successful and passing
+cases**, versus 21/23 for the preceding controller. At 0.003 and 0.005 pu
+measurement noise, steady fluctuation fell by 50.46% and 52.05%, respectively.
+The nominal IAE increased 2.31%, and the 0.005 pu steady-error result is close
+to the acceptance threshold. A separate 1.2 pu request followed by return to
+0.6 pu verified recovery with zero hard input or move violations. See
+[`docs/MPC_23_UPGRADE.md`](docs/MPC_23_UPGRADE.md) for the design, tradeoffs,
+reproduction steps, and full result references.
+
 ## Resume-ready description
 
 **Model-Free Adaptive Predictive Control for Hydropower Generation — MATLAB/Simulink**
