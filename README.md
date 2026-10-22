@@ -222,6 +222,47 @@ scripts/plot_readme_results.py` from the repository root. The plotting script
 uses only the Python standard library; MATLAB is needed to rerun the simulations,
 not to redraw these figures.
 
+## Phase 2.4–2.5: Monte Carlo study and presentation
+
+The next validation layer samples **100 joint-uncertainty cases** with a fixed
+seed, combining actuator gain and time-constant changes, measurement noise,
+load additions/rejections, rate limits, delays, and three operating profiles.
+It reuses the R2023a phase-2.3 Simulink harness, saves a CSV/MAT checkpoint
+after every case, and can resume without rerunning completed samples:
+
+```matlab
+addpath('scripts')
+run_mpc_robustness_tests("montecarlo", "mpc23", 100, 2401)
+build_three_controller_scorecard
+plot_phase24_results(100, 2401)
+```
+
+The result summary reports mean, median, and 95th percentile for IAE, ITAE,
+maximum directional overshoot, steady error, settling time, total control
+variation, and constraint-violation counts, plus simulation failure and
+acceptance rates. Failed runs remain in the denominator for failure/pass
+rates but are not silently treated as zero-valued successful metrics. The
+figures include a gain/time-constant heatmap, metric boxplots, and a logged
+load-disturbance response. See [`docs/MONTE_CARLO_STUDY.md`](docs/MONTE_CARLO_STUDY.md)
+for the exact ranges, statistic definitions, output paths, and interpretation
+limits. The 100-case outputs and plots should be published only after the
+full run finishes; a two-case pilot is not a statistical result.
+
+The separate [three-controller scorecard](results/three_controller_scorecard.csv)
+summarizes the **existing six common reference profiles**, not Monte Carlo
+runs. It gives equal weight to five lower-is-better mean metrics after scaling
+the best of the three controllers to 100 and the worst to 0 for each metric:
+
+| Controller | Relative score / 100 | Mean IAE | Mean maximum directional overshoot |
+|---|---:|---:|---:|
+| MFAC | 0.73 | 0.8480 | 17.317% |
+| MFAPC | 65.29 | 0.6438 | 3.237% |
+| Offset-free MPC | 97.17 | 0.5456 | 3.075% |
+
+This descriptive score is sensitive to its selected metrics and comparison
+set; it is not a safety or statistical-significance rating. The three
+controllers have not yet been run on a matched 100-case random sample.
+
 ## Resume-ready description
 
 **Model-Free Adaptive Predictive Control for Hydropower Generation — MATLAB/Simulink**
