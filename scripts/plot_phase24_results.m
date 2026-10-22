@@ -166,31 +166,46 @@ if ~isfile(new_file), error('No upgraded-MPC trace is available.'); end
 loaded = load(new_file, 'trace');
 updated = loaded.trace;
 f = figure('Visible', 'off', 'Color', 'white', ...
-    'Position', [80 80 1000 570]);
-plot(updated.t, updated.reference, '--', 'Color', [0.20 0.24 0.28], ...
-    'LineWidth', 1.5); hold on;
+    'Position', [80 80 1000 750]);
+layout = tiledlayout(f, 2, 1, 'Padding', 'compact', ...
+    'TileSpacing', 'compact');
+has_prior = false;
 if isfile([old_prefix '_trace.mat'])
     prior = load([old_prefix '_trace.mat'], 'trace');
     if string(prior.trace.CaseID) == string(updated.CaseID)
-        plot(prior.trace.t, prior.trace.y, 'Color', [0.48 0.56 0.64], ...
-            'LineWidth', 1.2);
+        has_prior = true;
+    end
+end
+for panel = 1:2
+    ax = nexttile(layout); hold(ax, 'on');
+    plot(ax, updated.t, updated.reference, '--', ...
+        'Color', [0.20 0.24 0.28], 'LineWidth', 1.5);
+    if has_prior
+        plot(ax, prior.trace.t, prior.trace.y, ...
+            'Color', [0.48 0.56 0.64], 'LineWidth', 1.2);
         label_names = {'Reference', 'Phase 2', 'Phase 2.3', 'Load switch'};
     else
         label_names = {'Reference', 'Phase 2.3', 'Load switch'};
     end
-else
-    label_names = {'Reference', 'Phase 2.3', 'Load switch'};
+    plot(ax, updated.t, updated.y, 'Color', [0.04 0.52 0.55], ...
+        'LineWidth', 1.6);
+    xline(ax, updated.LoadSwitchTime, ':', ...
+        'Color', [0.75 0.37 0.24], 'LineWidth', 1.3);
+    grid(ax, 'on');
+    ylabel(ax, 'Active power (pu)');
+    if panel == 1
+        xlim(ax, [0 50]);
+        title(ax, sprintf(['Disturbance response: %s, %.2f MW load, ' ...
+            'breaker initially %s'], string(updated.CaseID), ...
+            updated.LoadPowerMW, string(updated.LoadInitialState)), ...
+            'Interpreter', 'none');
+        legend(ax, label_names, 'Location', 'best');
+    else
+        xlim(ax, [27 34]);
+        title(ax, 'Detail around the 30 s load switch');
+        xlabel(ax, 'Time (s)');
+    end
 end
-plot(updated.t, updated.y, 'Color', [0.04 0.52 0.55], ...
-    'LineWidth', 1.6);
-xline(updated.LoadSwitchTime, ':', 'Color', [0.75 0.37 0.24], ...
-    'LineWidth', 1.3);
-grid on; xlim([0 50]);
-xlabel('Time (s)'); ylabel('Active power (pu)');
-title(sprintf('Disturbance response: %s, %.2f MW load, breaker initially %s', ...
-    string(updated.CaseID), updated.LoadPowerMW, ...
-    string(updated.LoadInitialState)), 'Interpreter', 'none');
-legend(label_names, 'Location', 'best');
 exportgraphics(f, fullfile(directory, 'montecarlo_disturbance_response.png'), ...
     'Resolution', 160);
 close(f);

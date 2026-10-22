@@ -2,7 +2,7 @@
 
 ## Study design
 
-The upgraded MPC is tested with a reproducible 100-case joint-uncertainty
+The upgraded MPC was tested with a reproducible 100-case joint-uncertainty
 sample. Each continuous input is independently stratified into 100 equal
 probability intervals and shuffled with MATLAB's `mt19937ar` stream (seed
 `2401`). The same generated case table can be replayed with the phase-2 MPC
@@ -51,7 +51,10 @@ For the upgraded controller, outputs use the prefix
 `results/mpc_robustness_montecarlo_n100_seed2401_`. Each variant writes
 `results.csv`, `results.mat`, `summary.csv`, and one `trace.mat` for the first
 successful case. The trace includes time, physical output, control, and
-reference, and drives the load-disturbance response figure.
+reference, and drives the load-disturbance response figure. The large trace
+MAT is a local generated artifact, not part of the published result bundle;
+rerun the command above to regenerate it. The per-case CSV/MAT, summary CSV,
+and rendered figures are published.
 
 ## Metrics and statistics
 
@@ -80,6 +83,32 @@ other sampled inputs also vary, these are descriptive conditional averages,
 not isolated causal effects of gain and time constant. The boxplots use the
 same successful-run populations as the summary. When phase-2 results exist,
 they appear beside phase 2.3 for matched case IDs.
+
+## R2023a full-run result
+
+The `n100_seed2401` run finished all 100 cases: 100 successful simulations,
+98 acceptance passes, zero hard input or move violations, and zero cases
+unsettled at 50 s. The two acceptance misses, `mc_047` and `mc_098`, exceeded
+only the 0.001 pu steady-error threshold, at 0.001073 and 0.001213 pu.
+
+| Metric | Mean | Median | P95 |
+|---|---:|---:|---:|
+| IAE | 0.587560 | 0.636634 | 0.898506 |
+| ITAE | 3.332964 | 3.076332 | 5.686627 |
+| Maximum directional overshoot (%) | 2.766186 | 2.765927 | 3.500023 |
+| Steady error (pu) | 0.000287 | 0.000237 | 0.000736 |
+| Settling time after 35 s (s) | 1.883692 | 1.815289 | 2.775161 |
+| Control total variation | 1.110222 | 1.211314 | 1.290973 |
+
+The committed [per-case CSV](../results/mpc_23_montecarlo_n100_seed2401_results.csv),
+[MAT result](../results/mpc_23_montecarlo_n100_seed2401_results.mat), and
+[summary CSV](../results/mpc_23_montecarlo_n100_seed2401_summary.csv) retain
+full precision. The [heatmap](../figures/montecarlo_parameter_heatmap.png),
+[boxplots](../figures/montecarlo_boxplots.png), and
+[representative disturbance response](../figures/montecarlo_disturbance_response.png)
+are presentation views of this run. The disturbance response is one case,
+not a percentile envelope. Heatmap cells contain only a few cases each;
+differences between cells are not a causal estimate.
 
 ## Three-controller scorecard
 

@@ -224,7 +224,7 @@ not to redraw these figures.
 
 ## Phase 2.4–2.5: Monte Carlo study and presentation
 
-The next validation layer samples **100 joint-uncertainty cases** with a fixed
+The completed validation samples **100 joint-uncertainty cases** with a fixed
 seed, combining actuator gain and time-constant changes, measurement noise,
 load additions/rejections, rate limits, delays, and three operating profiles.
 It reuses the R2023a phase-2.3 Simulink harness, saves a CSV/MAT checkpoint
@@ -237,16 +237,34 @@ build_three_controller_scorecard
 plot_phase24_results(100, 2401)
 ```
 
-The result summary reports mean, median, and 95th percentile for IAE, ITAE,
-maximum directional overshoot, steady error, settling time, total control
-variation, and constraint-violation counts, plus simulation failure and
-acceptance rates. Failed runs remain in the denominator for failure/pass
-rates but are not silently treated as zero-valued successful metrics. The
-figures include a gain/time-constant heatmap, metric boxplots, and a logged
-load-disturbance response. See [`docs/MONTE_CARLO_STUDY.md`](docs/MONTE_CARLO_STUDY.md)
-for the exact ranges, statistic definitions, output paths, and interpretation
-limits. The 100-case outputs and plots should be published only after the
-full run finishes; a two-case pilot is not a statistical result.
+All **100/100 simulations completed** in MATLAB R2023a; **98/100 met every
+acceptance criterion**. No sampled input or move constraint was violated. Two
+cases (`mc_047` and `mc_098`) narrowly missed the 0.001 pu final steady-error
+limit (0.001073 and 0.001213 pu); neither was a simulation failure.
+
+| Metric across 100 successful runs | Mean | Median | 95th percentile |
+|---|---:|---:|---:|
+| IAE | 0.5876 | 0.6366 | 0.8985 |
+| ITAE | 3.3330 | 3.0763 | 5.6866 |
+| Maximum directional overshoot | 2.766% | 2.766% | 3.500% |
+| Final steady error | 0.000287 pu | 0.000237 pu | 0.000736 pu |
+| Settling time after 35 s | 1.884 s | 1.815 s | 2.775 s |
+| Control total variation | 1.110 | 1.211 | 1.291 |
+
+![Mean IAE by actuator-gain and time-constant bins, with sample count per bin](figures/montecarlo_parameter_heatmap.png)
+
+![Distributions of IAE, ITAE, maximum overshoot, and steady error across 100 cases](figures/montecarlo_boxplots.png)
+
+![Representative logged load-disturbance response, including a close-up around the 30-second event](figures/montecarlo_disturbance_response.png)
+
+Download the [per-case CSV](results/mpc_23_montecarlo_n100_seed2401_results.csv),
+[MAT results](results/mpc_23_montecarlo_n100_seed2401_results.mat), and
+[statistics CSV](results/mpc_23_montecarlo_n100_seed2401_summary.csv). Failed
+runs would remain in the denominator for failure/pass rates, not be silently
+treated as zero-valued metrics. The heatmap bins have small, varying counts
+and show association rather than an isolated gain/time-constant effect. See
+[`docs/MONTE_CARLO_STUDY.md`](docs/MONTE_CARLO_STUDY.md) for sampling ranges,
+definitions, reproduction, and interpretation limits.
 
 The separate [three-controller scorecard](results/three_controller_scorecard.csv)
 summarizes the **existing six common reference profiles**, not Monte Carlo

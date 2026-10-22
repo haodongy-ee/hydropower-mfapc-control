@@ -5,6 +5,7 @@ slprj/
 *.asv
 *.m~
 *.slx.r20*
+results/*_trace.mat
 
 # Local development and archived files
 01_original/
