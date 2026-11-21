@@ -233,6 +233,8 @@ after every case, and can resume without rerunning completed samples:
 ```matlab
 addpath('scripts')
 run_mpc_robustness_tests("montecarlo", "mpc23", 100, 2401)
+run_mpc_robustness_tests("montecarlo", "phase2", 100, 2401)
+analyze_paired_mpc_montecarlo(100, 2401)
 build_three_controller_scorecard
 plot_phase24_results(100, 2401)
 ```
@@ -253,7 +255,7 @@ limit (0.001073 and 0.001213 pu); neither was a simulation failure.
 
 ![Mean IAE by actuator-gain and time-constant bins, with sample count per bin](figures/montecarlo_parameter_heatmap.png)
 
-![Distributions of IAE, ITAE, maximum overshoot, and steady error across 100 cases](figures/montecarlo_boxplots.png)
+![Distributions of IAE, ITAE, maximum overshoot, and steady error for both MPC versions across matched cases](figures/montecarlo_boxplots.png)
 
 ![Representative logged load-disturbance response, including a close-up around the 30-second event](figures/montecarlo_disturbance_response.png)
 
@@ -265,6 +267,33 @@ treated as zero-valued metrics. The heatmap bins have small, varying counts
 and show association rather than an isolated gain/time-constant effect. See
 [`docs/MONTE_CARLO_STUDY.md`](docs/MONTE_CARLO_STUDY.md) for sampling ranges,
 definitions, reproduction, and interpretation limits.
+
+### Matched phase-2 versus phase-2.3 MPC
+
+Both versions finished the **same 100 cases** without simulation failures or
+hard input/move-constraint violations. Acceptance rose from **68/100 to
+98/100**: 30 cases passed only with phase 2.3, 68 passed both, and 2 passed
+neither. The old MPC missed the 0.008 pu steady-fluctuation threshold in 32
+cases; upgraded MPC missed it in none. The two upgraded-MPC misses instead
+exceeded the 0.001 pu steady-error threshold.
+
+| Lower-is-better mean metric | Phase 2 | Phase 2.3 | Relative change |
+|---|---:|---:|---:|
+| IAE | 0.5807 | 0.5876 | +1.18% |
+| ITAE | 3.3192 | 3.3330 | +0.42% |
+| Maximum directional overshoot | 2.900% | 2.766% | −4.62% |
+| Steady output fluctuation | 0.006979 pu | 0.004807 pu | −31.12% |
+| Settling time after 35 s | 1.808 s | 1.884 s | +4.21% |
+| Control total variation | 2.195 | 1.110 | −49.41% |
+
+![Matched case-by-case comparison of tracking, overshoot, and steady error; points below the diagonal favor phase 2.3](figures/montecarlo_paired_scatter.png)
+
+The upgrade substantially reduces noise-driven fluctuation and control
+movement in this test harness, but slightly worsens mean IAE, ITAE, settling
+time, and steady error. These are descriptive results for one fixed 100-case
+sample, not field reliability estimates. See the [paired case CSV](results/mpc_paired_n100_seed2401_cases.csv),
+[paired summary CSV](results/mpc_paired_n100_seed2401_summary.csv), and
+[phase-2 raw results](results/mpc_robustness_montecarlo_n100_seed2401_results.csv).
 
 The separate [three-controller scorecard](results/three_controller_scorecard.csv)
 summarizes the **existing six common reference profiles**, not Monte Carlo

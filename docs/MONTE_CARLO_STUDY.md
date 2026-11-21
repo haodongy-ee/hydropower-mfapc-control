@@ -5,7 +5,7 @@
 The upgraded MPC was tested with a reproducible 100-case joint-uncertainty
 sample. Each continuous input is independently stratified into 100 equal
 probability intervals and shuffled with MATLAB's `mt19937ar` stream (seed
-`2401`). The same generated case table can be replayed with the phase-2 MPC
+`2401`). The same generated case table was replayed with the phase-2 MPC
 for a paired comparison. The plant and controller are simulated for 50 s in
 MATLAB R2023a; no R2026a model conversion is used.
 
@@ -32,8 +32,8 @@ From the repository root in MATLAB R2023a:
 ```matlab
 addpath('scripts')
 run_mpc_robustness_tests("montecarlo", "mpc23", 100, 2401)
-% Optional paired comparison using exactly the same cases:
 run_mpc_robustness_tests("montecarlo", "phase2", 100, 2401)
+analyze_paired_mpc_montecarlo(100, 2401)
 build_three_controller_scorecard
 plot_phase24_results(100, 2401)
 ```
@@ -81,8 +81,8 @@ The gain/time-constant heatmap bins successful cases and labels each bin with
 both its mean IAE and sample count. Empty bins stay marked as empty. Because
 other sampled inputs also vary, these are descriptive conditional averages,
 not isolated causal effects of gain and time constant. The boxplots use the
-same successful-run populations as the summary. When phase-2 results exist,
-they appear beside phase 2.3 for matched case IDs.
+same successful-run populations as the summary. Phase-2 results appear
+beside phase 2.3 for matched case IDs.
 
 ## R2023a full-run result
 
@@ -109,6 +109,45 @@ full precision. The [heatmap](../figures/montecarlo_parameter_heatmap.png),
 are presentation views of this run. The disturbance response is one case,
 not a percentile envelope. Heatmap cells contain only a few cases each;
 differences between cells are not a causal estimate.
+
+## Matched phase-2 versus phase-2.3 comparison
+
+The 100 phase-2 simulations also completed successfully on the identical
+case IDs, input values, noise seeds, and reference profiles. The paired
+analysis checks every design field before comparing outcomes. Both versions
+had zero input/move violations and zero unsettled cases. Acceptance passes
+were 68 for phase 2 and 98 for phase 2.3: 68 cases passed both, 30 passed
+only phase 2.3, none passed only phase 2, and two passed neither.
+
+| Lower-is-better metric | Phase-2 mean | Phase-2.3 mean | Mean paired change (new − old) | Relative mean change | Cases improved |
+|---|---:|---:|---:|---:|---:|
+| IAE | 0.580714 | 0.587560 | +0.006845 | +1.18% | 22/100 |
+| ITAE | 3.319172 | 3.332964 | +0.013792 | +0.42% | 42/100 |
+| Maximum overshoot (%) | 2.900232 | 2.766186 | −0.134046 | −4.62% | 79/100 |
+| Steady error (pu) | 0.000262 | 0.000287 | +0.000026 | +9.82% | 49/100 |
+| Steady fluctuation (pu) | 0.006979 | 0.004807 | −0.002172 | −31.12% | 93/100 |
+| Settling time after 35 s (s) | 1.807672 | 1.883692 | +0.076020 | +4.21% | 18/100 |
+| Control total variation | 2.194758 | 1.110222 | −1.084536 | −49.41% | 100/100 |
+
+Negative paired change denotes improvement for these metrics. The old MPC
+missed the 0.008 pu steady-fluctuation criterion in 32 cases; the upgrade
+missed it in none. One old case also exceeded the steady-error criterion.
+The upgraded version missed only steady error in `mc_047` and `mc_098`
+(0.001073 and 0.001213 pu). Those same two cases failed the old controller's
+fluctuation criterion, so they did not represent lost acceptance passes.
+
+The [phase-2 raw CSV](../results/mpc_robustness_montecarlo_n100_seed2401_results.csv)
+and [MAT result](../results/mpc_robustness_montecarlo_n100_seed2401_results.mat)
+remain separate from the [paired case CSV](../results/mpc_paired_n100_seed2401_cases.csv),
+[paired summary CSV](../results/mpc_paired_n100_seed2401_summary.csv), and
+[paired MAT result](../results/mpc_paired_n100_seed2401.mat). The
+[paired scatter](../figures/montecarlo_paired_scatter.png),
+[two-version boxplots](../figures/montecarlo_boxplots.png), and
+[example disturbance response](../figures/montecarlo_disturbance_response.png)
+show complementary views. The mean tracking metrics and settling time are
+slightly worse after the upgrade; the major gain is smoother output and
+control with more accepted cases. One fixed seed and synthetic uncertainty
+model do not establish a field failure probability or a significance claim.
 
 ## Three-controller scorecard
 
