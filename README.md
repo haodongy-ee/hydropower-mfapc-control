@@ -295,6 +295,32 @@ sample, not field reliability estimates. See the [paired case CSV](results/mpc_p
 [paired summary CSV](results/mpc_paired_n100_seed2401_summary.csv), and
 [phase-2 raw results](results/mpc_robustness_montecarlo_n100_seed2401_results.csv).
 
+### Independent 50-case check and boundary-case diagnosis
+
+With a second fixed seed (`2402`), both controllers completed 50 new matched
+cases without simulation failures or recorded hard constraint violations.
+Acceptance increased from **32/50 to 50/50**; 18 cases passed only after the
+upgrade. Mean steady fluctuation fell **33.49%** and control total variation
+fell **49.05%**, while IAE rose **1.23%** and settling time rose **1.93%**.
+This repeats the direction of the 100-case tradeoff under another synthetic
+sample, without establishing a field failure probability.
+
+![Independent-seed matched comparison across 50 cases](figures/montecarlo_paired_scatter_n50_seed2402.png)
+
+The two phase-2.3 misses in the original 100-case set, `mc_047` and `mc_098`,
+were replayed using the **full-precision MAT checkpoint inputs**. All four
+old/new final-window metrics matched the recorded values exactly. Phase 2.3
+reduced fluctuation below the 0.008 pu limit but retained final mean errors
+of 0.001073 and 0.001213 pu, above the 0.001 pu acceptance limit.
+
+![Exact replays of the final five seconds in the two acceptance-miss cases](figures/mpc_23_failure_case_final_windows.png)
+
+See the [50-case paired summary](results/mpc_paired_n50_seed2402_summary.csv),
+[all 50 paired cases](results/mpc_paired_n50_seed2402_cases.csv), and
+[boundary-case diagnostic CSV](results/mpc_failure_diagnostics_n100_seed2401.csv).
+For exact trajectory replay, read the case inputs from the MAT checkpoint;
+the human-readable design CSV rounds floating-point values.
+
 The separate [three-controller scorecard](results/three_controller_scorecard.csv)
 summarizes the **existing six common reference profiles**, not Monte Carlo
 runs. It gives equal weight to five lower-is-better mean metrics after scaling

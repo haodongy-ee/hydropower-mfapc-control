@@ -103,7 +103,7 @@ prefix = fullfile(results_dir, sprintf('mpc_paired_n%d_seed%d', n, seed));
 writetable(paired, [prefix '_cases.csv']);
 writetable(summary, [prefix '_summary.csv']);
 save([prefix '.mat'], 'paired', 'summary', 'n', 'seed');
-make_paired_scatter(paired, figures_dir, n);
+make_paired_scatter(paired, figures_dir, n, seed);
 
 fprintf('Paired successful cases: %d/%d\n', sum(valid), n);
 fprintf('Acceptance passes, phase 2: %d; phase 2.3: %d\n', ...
@@ -119,7 +119,7 @@ hi = ceil(position);
 value = values(lo) + (position-lo) * (values(hi)-values(lo));
 end
 
-function make_paired_scatter(paired, directory, n)
+function make_paired_scatter(paired, directory, n, seed)
 metrics = {'IAE', 'ITAE', 'MaximumOvershootPct', 'SteadyError'};
 labels = {'IAE (pu s)', 'ITAE (pu s^2)', ...
     'Maximum overshoot (%)', 'Final steady error (milli-pu)'};
@@ -156,7 +156,12 @@ for k = 1:numel(metrics)
         'Interpreter', 'none');
 end
 title(layout, sprintf('Matched Monte Carlo cases (n=%d; below line is better)', n));
-exportgraphics(f, fullfile(directory, 'montecarlo_paired_scatter.png'), ...
+if n == 100 && seed == 2401
+    figure_name = 'montecarlo_paired_scatter.png';
+else
+    figure_name = sprintf('montecarlo_paired_scatter_n%d_seed%d.png', n, seed);
+end
+exportgraphics(f, fullfile(directory, figure_name), ...
     'Resolution', 160);
 close(f);
 end

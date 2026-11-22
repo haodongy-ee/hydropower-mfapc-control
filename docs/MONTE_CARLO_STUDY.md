@@ -45,7 +45,12 @@ simulation retains its failure status and error text rather than being
 silently omitted. To retry a failed case, first make a reviewed copy of the
 results; do not edit the original outcome in place.
 
-The reproducibility key is `results/mpc_montecarlo_design_n100_seed2401.csv`.
+The case-design CSV is a readable index, but MATLAB's CSV formatting loses
+some floating-point digits. For **exact trajectory replay**, use the `cases`
+table in either variant's `results.mat` checkpoint. Reading rounded inputs
+back from the CSV produced visibly different trajectories near acceptance
+thresholds; replaying the MAT values reproduced the recorded metrics exactly.
+The design CSV remains useful for inspection and matching case IDs.
 For the upgraded controller, outputs use the prefix
 `results/mpc_23_montecarlo_n100_seed2401_`; phase 2 uses
 `results/mpc_robustness_montecarlo_n100_seed2401_`. Each variant writes
@@ -148,6 +153,63 @@ show complementary views. The mean tracking metrics and settling time are
 slightly worse after the upgrade; the major gain is smoother output and
 control with more accepted cases. One fixed seed and synthetic uncertainty
 model do not establish a field failure probability or a significance claim.
+
+## Independent-seed check protocol
+
+Before inspecting any new outcomes, the next check is fixed at 50 new
+stratified cases with seed `2402`. Both controller versions use the same
+case design; neither controller is retuned. The primary descriptive
+comparisons are acceptance passes, simulation failures, mean IAE, steady
+fluctuation, and control total variation. Overshoot, steady error, and
+settling time remain reported as tradeoffs. The original `n100_seed2401`
+results stay unchanged. This 50-case check tests whether the direction of
+the observed tradeoff repeats under another seed; it is not a field failure
+probability or a formal significance test.
+
+## Independent-seed result: 50 new matched cases
+
+Both R2023a runs with `n=50`, seed `2402` completed with zero simulation
+failures and zero recorded hard input or move-constraint violations. The old
+MPC passed 32/50 acceptance checks and phase 2.3 passed 50/50: 32 passed both,
+18 passed only the upgrade, and none passed only the old controller. The
+results follow the preregistered direction of the 100-case comparison.
+
+| Lower-is-better mean metric | Phase 2 | Phase 2.3 | Relative change |
+|---|---:|---:|---:|
+| IAE | 0.577524 | 0.584635 | +1.23% |
+| ITAE | 3.331231 | 3.345494 | +0.43% |
+| Maximum directional overshoot | 2.887% | 2.728% | −5.52% |
+| Steady fluctuation (pu) | 0.007209 | 0.004794 | −33.49% |
+| Settling time after 35 s (s) | 1.859 | 1.895 | +1.93% |
+| Control total variation | 2.178 | 1.110 | −49.05% |
+
+The new sample supports the same descriptive tradeoff: less fluctuation,
+overshoot, and control movement, with slightly worse mean tracking error and
+settling time. It does not establish field reliability or a formal confidence
+claim. The [design CSV](../results/mpc_montecarlo_design_n50_seed2402.csv),
+[phase-2 results](../results/mpc_robustness_montecarlo_n50_seed2402_results.csv),
+[phase-2.3 results](../results/mpc_23_montecarlo_n50_seed2402_results.csv),
+[paired cases](../results/mpc_paired_n50_seed2402_cases.csv),
+[paired summary](../results/mpc_paired_n50_seed2402_summary.csv), and
+[paired scatter](../figures/montecarlo_paired_scatter_n50_seed2402.png) retain
+the underlying values. Both variant MAT checkpoints contain the exact case
+inputs for replay.
+
+## Original acceptance misses: exact replay
+
+`mc_047` and `mc_098` were the only phase-2.3 acceptance misses in the
+original 100-case sample. Using the saved MAT inputs,
+`diagnose_mpc_steady_error_cases(100,2401)` replayed both controllers on
+both cases and reproduced every recorded steady-error and fluctuation metric
+exactly. In `mc_047`, the upgraded controller's final-window mean was
+0.001073 pu above the 0.9 pu target; in `mc_098`, it was 0.001213 pu below.
+Both exceed the 0.001 pu steady-error criterion. The old controller's
+fluctuation was 0.008098 and 0.008587 pu, respectively, above the 0.008 pu
+criterion; the upgraded values were 0.005630 and 0.006626 pu. These replay
+traces identify the acceptance tradeoff, without isolating a causal mechanism
+or justifying controller retuning from two selected cases. See the
+[diagnostic CSV](../results/mpc_failure_diagnostics_n100_seed2401.csv) and
+[final-window plot](../figures/mpc_23_failure_case_final_windows.png).
 
 ## Three-controller scorecard
 
