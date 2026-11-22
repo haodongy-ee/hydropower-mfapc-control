@@ -172,7 +172,7 @@ Both R2023a runs with `n=50`, seed `2402` completed with zero simulation
 failures and zero recorded hard input or move-constraint violations. The old
 MPC passed 32/50 acceptance checks and phase 2.3 passed 50/50: 32 passed both,
 18 passed only the upgrade, and none passed only the old controller. The
-results follow the preregistered direction of the 100-case comparison.
+results show the same directional tradeoff as the 100-case comparison.
 
 | Lower-is-better mean metric | Phase 2 | Phase 2.3 | Relative change |
 |---|---:|---:|---:|
